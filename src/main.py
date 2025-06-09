@@ -9,10 +9,11 @@ from api.token_routes import router as tokens_router
 config_logging()
 logger = logging.getLogger('api')
 
-app = FastAPI(title="hltkn_api", description="API for timescaleDB", version="0.0.1")
-app.include_router(protocols_router, prefix="/protocols", tags=["protocols"])
-app.include(tokens_router, prefix="/tokens", tags=["tokens"])
+app = FastAPI(title="hltkn_api", description="API interfacing timescaleDB data", version="0.0.1")
+app.include_router(protocols_router, prefix="/protocol", tags=["protocols"])
+app.include(tokens_router, prefix="/token", tags=["tokens"])
 
+#TODO: WIP
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
