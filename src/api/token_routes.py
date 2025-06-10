@@ -1,6 +1,8 @@
+import logging
 from fastapi import APIRouter
 # from models.token import Token
 
+logger  = logging.getLogger("repository")
 router = APIRouter()
 
 @router.get("/")
