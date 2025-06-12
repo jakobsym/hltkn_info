@@ -2,8 +2,8 @@ import logging
 import uvicorn
 from config.logging_config import config_logging
 from fastapi import FastAPI
-from api.protocol_routes import router as protocols_router
-from api.token_routes import router as tokens_router
+from api.routes.protocol_routes import router as protocols_router
+from api.routes.token_routes import router as tokens_router
 from repository.timescale import TimescaleDB
 
 # init logging
@@ -22,8 +22,8 @@ async def lifespan(app: FastAPI):
         logger.info("DB connection pool is closed")
         
 app = FastAPI(title="hltkn_api", description="API interfacing timescaleDB data", version="0.0.1", lifespan=lifespan)
-app.include_router(protocols_router, prefix="/protocol", tags=["protocols"])
-app.include_router(tokens_router, prefix="/token", tags=["tokens"])
+app.include_router(protocols_router, prefix="/v0/protocol", tags=["protocols"])
+app.include_router(tokens_router, prefix="/v0/token", tags=["tokens"])
 
 #TODO: WIP
 @app.get("/health")
