@@ -70,6 +70,15 @@ class TimescaleDB:
     """ Token related method """
     @classmethod
     async def get_token_holders(cls, token_address: str):
+        """
+        SELECT tm.holders, t.token_symbol, t.token_name 
+        FROM tokens t 
+        JOIN token_metrics tm ON t.id = tm.token_id 
+        WHERE t.token_address = '0xfFaa4a3D97fE9107Cef8a3F48c069F577Ff76cC1'
+        ORDER BY tm.holders DESC LIMIT 1;
+
+        - Returns the latest holder count record for a given token_address
+        """
         pass
     
     @classmethod
