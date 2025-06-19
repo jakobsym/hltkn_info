@@ -69,24 +69,54 @@ class TimescaleDB:
 
     """ Token related method """
     @classmethod
-    async def get_token_holders(cls, token_address: str):
+    async def get_token_data(cls, token_address: str):
+        try:
+            async with cls._connection_pool.acquire() as conn:
+                
+
         """
-        SELECT tm.holders, t.token_symbol, t.token_name 
+        SELECT t.token_symbol, t.token_name, t.token_address, tm.holders, t.supply, tm.recorded_at
         FROM tokens t 
         JOIN token_metrics tm ON t.id = tm.token_id 
         WHERE t.token_address = '0xfFaa4a3D97fE9107Cef8a3F48c069F577Ff76cC1'
+        ORDER BY tm.holders DESC LIMIT 1
+
+        - Returns the most recent holder count record + all token data for a given token_address
+        """
+        pass
+
+    @classmethod
+    async def get_token_holders(cls, token_address: str):
+        """
+        SELECT tm.holders FROM token_metrics tm 
+        JOIN tokens t ON tm.token_id = t.id 
+        WHERE t.token_address = '0x47bb061C0204Af921F43DC73C7D7768d2672DdEE' 
         ORDER BY tm.holders DESC LIMIT 1;
 
-        - Returns the latest holder count record for a given token_address
+        - Returns most recent token holder amount for a given token nothing else
         """
         pass
     
     @classmethod
-    async def get_token_data(cls, token_address: str):
-        pass
-
-    @classmethod
     async def get_tokens(cls):
+        """
+        SELECT t.token_symbol, 
+            t.token_name, 
+            t.token_address, 
+            tm.holders, 
+            t.supply
+        FROM tokens t 
+        JOIN (
+            SELECT token_id, 
+                holders,
+                ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY recorded_at DESC) as rn
+            FROM token_metrics
+        ) tm ON t.id = tm.token_id AND tm.rn = 1
+        ORDER BY t.token_symbol;
+
+        - Returns a list of all tokens with current timescaleDB
+
+        """
         pass
 
 

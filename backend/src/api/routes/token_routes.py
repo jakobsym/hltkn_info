@@ -20,6 +20,7 @@ async def get_token_holders(token_address: str):
 @router.get("/{token_addres}")
 async def get_token_data(token_addres: str):
     # return all data for a given token
+    # if not found in timescale, calls hyperscan or similar API
     pass
 
 @router.get("/holders/ts/{token_address}")
