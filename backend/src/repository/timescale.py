@@ -24,14 +24,20 @@ class TimescaleDB:
     @classmethod
     async def init_pool(cls, max_retry: int = 3, retry_delay: float = 5.0, min_size:int = 1, max_size:int  = 10):
         """ check if connection active before establishing connection pool """
+        
         # pool already established
         if cls._connection_pool is not None:
             return
 
+        connection_str = os.getenv("TIMESCALE_CONNECTION_STRING")
+        if connection_str == None:
+            logger.error("connection string incorrectly configured")
+            raise RuntimeError("Database connection string is not configured")
+        
         attempts = 0
         while attempts < max_retry:
             try:
-                cls._connection_pool = await asyncpg.create_pool(os.getenv("TIMESCALE_CONNECTION_STRING"), command_timeout=60, max_size=max_size, min_size=min_size)
+                cls._connection_pool = await asyncpg.create_pool(connection_str, command_timeout=60, max_size=max_size, min_size=min_size)
                 return
             except Exception as e:
                 attempts += 1
@@ -46,9 +52,9 @@ class TimescaleDB:
     @classmethod
     @asynccontextmanager
     async def get_connection(cls):
-        """ Get connection from pool"""
+        """ Obtains a connection from connection pool """
         if cls._connection_pool is None:
-            logger.error(f"no valid connection pool established: {str(e)}")
+            logger.error(f"no valid connection pool established")
             raise RuntimeError("connection pool is NOT established")
 
         connection = None
@@ -56,7 +62,7 @@ class TimescaleDB:
             async with cls._connection_pool.acquire() as connection:
                 yield connection # returns connection to the calling method
         except Exception as e:
-            logger.error("unable to acqurie connection to connection pool")
+            logger.error(f"unable to acqurie connection to connection pool: {str(e)}")
             raise
 
     @classmethod
@@ -74,13 +80,13 @@ class TimescaleDB:
         - Returns the most recent holder count record + all token data for a given token_address
         """
         try:
-            async with cls._connection_pool.acquire() as conn:
+            async with cls.get_connection() as conn:
                 res = await conn.fetchrow('''
-                    SELECT t.token_symbol, t.token_name, t.token_address, tm.holders, t.supply, tm.recorded_at
+                    SELECT t.token_symbol, t.token_name, t.token_address, tm.holders, t.supply
                     FROM tokens t 
                     JOIN token_metrics tm ON t.id = tm.token_id 
                     WHERE t.token_address = $1
-                    ORDER BY tm.holders DESC LIMIT 1
+                    ORDER BY tm.holders DESC LIMIT 1;
                     ''', token_address)
 
                 if res is None:
@@ -96,9 +102,8 @@ class TimescaleDB:
         """
         - Returns most recent holder count for a given token
         """
-        
         try:
-            async with cls._connection_pool.acquire() as conn:
+            async with cls.get_connection as conn:
                 res = await conn.fetchrow('''
                     SELECT tm.holders FROM token_metrics tm 
                     JOIN tokens t ON tm.token_id = t.id 
@@ -106,9 +111,9 @@ class TimescaleDB:
                     ORDER BY tm.holders DESC LIMIT 1;
                 ''', token_address)
 
-                if res is None:
-                    return None
-                return dict(res)
+            if res is None:
+                return None
+            return dict(res)
 
         except Exception as e:
             logger.error(f"error retrieving token holders from db: {str(e)}")
@@ -120,8 +125,8 @@ class TimescaleDB:
         - Returns a list of all tokens with current timescaleDB
         """
         try:
-            async with cls._connection_pool.acquire() as conn:
-                res = await conn.fetchmany('''
+            async with cls.get_connection() as conn:
+                res = await conn.fetch('''
                 SELECT t.token_symbol, 
                     t.token_name, 
                     t.token_address, 

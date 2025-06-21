@@ -14,9 +14,14 @@ async def lifespan(app: FastAPI):
     try:
         await TimescaleDB.init_pool()
         logger.info("DB connection pool established")
+        
+        if TimescaleDB._connection_pool is None:
+            raise RuntimeError("failed to establish db connection pool")
+        
         yield
     except Exception as e:
         logger.error(f"error init connection pool: {str(e)}")
+        raise
     finally:
         await TimescaleDB.close_connection()
         logger.info("DB connection pool is closed")
