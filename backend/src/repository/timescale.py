@@ -85,14 +85,12 @@ class TimescaleDB:
 
                 if res is None:
                     return None
-
                 return dict(res)
+
         except Exception as e:
             logger.error(f"error retrieving token data from db: {str(e)}")
             raise
                 
-
-
     @classmethod
     async def get_token_holders(cls, token_address: str):
         """
@@ -107,37 +105,45 @@ class TimescaleDB:
                     WHERE t.token_address = $1 
                     ORDER BY tm.holders DESC LIMIT 1;
                 ''', token_address)
+
                 if res is None:
                     return None
-
                 return dict(res)
+
         except Exception as e:
             logger.error(f"error retrieving token holders from db: {str(e)}")
             raise
         
-    
     @classmethod
     async def get_tokens(cls):
         """
-        SELECT t.token_symbol, 
-            t.token_name, 
-            t.token_address, 
-            tm.holders, 
-            t.supply
-        FROM tokens t 
-        JOIN (
-            SELECT token_id, 
-                holders,
-                ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY recorded_at DESC) as rn
-            FROM token_metrics
-        ) tm ON t.id = tm.token_id AND tm.rn = 1
-        ORDER BY t.token_symbol;
-
         - Returns a list of all tokens with current timescaleDB
-
         """
-        pass
+        try:
+            async with cls._connection_pool.acquire() as conn:
+                res = await conn.fetchmany('''
+                SELECT t.token_symbol, 
+                    t.token_name, 
+                    t.token_address, 
+                    tm.holders, 
+                    t.supply
+                FROM tokens t 
+                JOIN (
+                    SELECT token_id, 
+                        holders,
+                        ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY recorded_at DESC) as rn
+                    FROM token_metrics
+                ) tm ON t.id = tm.token_id AND tm.rn = 1
+                ORDER BY t.token_symbol;
+                ''')
 
+                if res is None:
+                    return None
+                return res
+
+        except Exception as e:
+            logger.error(f"error retrieving tokens from db: {str(e)}")
+            raise
 
 
     """ Protocol related methods """
