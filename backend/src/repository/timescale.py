@@ -4,6 +4,7 @@ import asyncpg
 import logging
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from models.token import TokenHolderResponse, TokenResponse
 
 load_dotenv()
 logger = logging.getLogger('repository')
@@ -75,10 +76,11 @@ class TimescaleDB:
 
     """ Token related methods """
     @classmethod
-    async def get_token_data(cls, token_address: str):
+    async def get_token_data(cls, token_address: str) -> TokenResponse:
         """
         - Returns the most recent holder count record + all token data for a given token_address
         """
+        
         try:
             async with cls.get_connection() as conn:
                 res = await conn.fetchrow('''
@@ -91,14 +93,14 @@ class TimescaleDB:
 
                 if res is None:
                     return None
-                return dict(res)
-
+                token = TokenResponse(**dict(res))
+                return token
         except Exception as e:
             logger.error(f"error retrieving token data from db: {str(e)}")
             raise
                 
     @classmethod
-    async def get_token_holders(cls, token_address: str):
+    async def get_token_holders(cls, token_address: str) -> TokenHolderResponse:
         """
         - Returns most recent holder count for a given token
         """
@@ -113,8 +115,10 @@ class TimescaleDB:
 
             if res is None:
                 return None
-            return dict(res)
 
+            holders = TokenHolderResponse(**dict(res))
+            return holders
+            
         except Exception as e:
             logger.error(f"error retrieving token holders from db: {str(e)}")
             raise
@@ -145,7 +149,6 @@ class TimescaleDB:
                 if res is None:
                     return None
                 return res
-
         except Exception as e:
             logger.error(f"error retrieving tokens from db: {str(e)}")
             raise

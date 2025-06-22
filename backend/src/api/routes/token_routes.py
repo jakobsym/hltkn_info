@@ -1,22 +1,30 @@
 import logging
 from fastapi import APIRouter, HTTPException
 from repository.timescale import TimescaleDB
+#from repository.hyperliquid import HyperLiquid
 # from models.token import Token
 
 logger  = logging.getLogger("repository")
 router = APIRouter()
+#hl_tokens = HyperLiquid("https://www.hyperscan.com/api/v2/tokens/")
+#hl_addresses = HyperLiquid("https://www.hyperscan.com/api/v2/addresses/")
+
 
 @router.get("/holders/{token_address}")
 async def get_token_holders(token_address: str):
+    holders = None
     # call timescale method for fetching holders
     try:
         holders = await TimescaleDB.get_token_holders(token_address=token_address)
         if holders is None:
-            #TODO: Try calling API directly instead, if not successful return 400 error
-            raise HTTPException(status_code=404, detail="Token not found")
+            """
+            holders = await hl_tokens.get_token_info(token_address=token_address)
+            if holders is None:
+                raise HTTPException(status_code=404, detail="Token not found")
+            """
         return holders
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server error")
+        raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
    
 
 @router.get("/")
@@ -27,7 +35,7 @@ async def get_tokens():
             raise HTTPException(status_code=500, detail="unable to get tokens from db")
         return data
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server error")
+        raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
 
 
 @router.get("/{token_address}")
