@@ -2,6 +2,7 @@ import os
 import asyncio
 import asyncpg
 import logging
+from datetime import datetime
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from models.token import TokenHolderResponse, TokenResponse
@@ -31,6 +32,7 @@ class TimescaleDB:
             return
 
         connection_str = os.getenv("TIMESCALE_CONNECTION_STRING")
+      
         if connection_str == None:
             logger.error("connection string incorrectly configured")
             raise RuntimeError("Database connection string is not configured")
@@ -61,6 +63,7 @@ class TimescaleDB:
         connection = None
         try:
             async with cls._connection_pool.acquire() as connection:
+                logger.debug("connection acquired successfully")
                 yield connection # returns connection to the calling method
         except Exception as e:
             logger.error(f"unable to acqurie connection to connection pool: {str(e)}")
@@ -105,18 +108,17 @@ class TimescaleDB:
         - Returns most recent holder count for a given token
         """
         try:
-            async with cls.get_connection as conn:
+            async with cls.get_connection() as conn:
                 res = await conn.fetchrow('''
                     SELECT tm.holders FROM token_metrics tm 
                     JOIN tokens t ON tm.token_id = t.id 
                     WHERE t.token_address = $1 
-                    ORDER BY tm.holders DESC LIMIT 1;
+                    ORDER BY tm.recorded_at DESC LIMIT 1;
                 ''', token_address)
 
             if res is None:
                 return None
-
-            holders = TokenHolderResponse(**dict(res))
+            holders = TokenHolderResponse(holders=res['holders'], timestamp=datetime.now())
             return holders
             
         except Exception as e:
@@ -166,3 +168,13 @@ class TimescaleDB:
     @classmethod
     async def get_protocol_liq(cls, protocol_name: str):
         pass 
+
+"""
+- returns ATH holder count for a given token
+
+SELECT tm.holders FROM token_metrics tm 
+                    JOIN tokens t ON tm.token_id = t.id 
+                    WHERE t.token_address = $1 
+                    ORDER BY tm.holders DESC LIMIT 1;
+
+"""

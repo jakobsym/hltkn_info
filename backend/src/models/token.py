@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from datetime import date
+from pydantic import BaseModel, field_validator
+from datetime import datetime
 from typing import Optional
 
 class Tokens(BaseModel):
@@ -7,7 +7,7 @@ class Tokens(BaseModel):
 
 class TokenHolderResponse(BaseModel):
     holders: int
-    timestamp: Optional[date]
+    timestamp: Optional[datetime]
 
 class TokenResponse(BaseModel):
     name: str
@@ -15,7 +15,13 @@ class TokenResponse(BaseModel):
     address: str
     holders: int
     supply: int
-    timestamp: Optional[date]
+    timestamp: Optional[datetime]
+    @field_validator('timestamp')
+    @classmethod
+    def parse_timestamp(cls, value):
+        if isinstance(value, str):
+            return datetime.fromisoformat(value)
+        return value
 
 # TODO: Make different responses for different timeframes?
 # response for 6hour, 12hour, etc?
