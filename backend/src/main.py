@@ -17,7 +17,6 @@ async def lifespan(app: FastAPI):
         
         if TimescaleDB._connection_pool is None:
             raise RuntimeError("failed to establish db connection pool")
-        
         yield
     except Exception as e:
         logger.error(f"error init connection pool: {str(e)}")

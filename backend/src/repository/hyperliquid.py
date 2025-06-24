@@ -1,19 +1,20 @@
 import logging
 import requests
 from datetime import datetime
-from models.token import TokenHolderResponse, TokenResponse
+from models.token import TokenHolderResponseAPI, TokenResponseAPI, TokenDeployerResponseAPI,TokenTopHoldersResponseAPI
 
 logger = logging.getLogger('repository')
 
 class HyperLiquid:
 
-    def __init__(self, base_url: str = "https://www.hyperscan.com/api/v2", rpc_url: str = ""):
+    def __init__(self, base_url: str = "https://www.hyperscan.com/api/v2", rpc_url: str = None):
         self.base_url = base_url
         self.rpc_url = rpc_url
         self.session = requests.Session()
         self.timeout = 5    
 
-    async def get_token_info(self, token_address: str) -> TokenResponse:
+    async def get_token_info(self, token_address: str) -> TokenResponseAPI:
+        # base_url = https://www.hyperscan.com/api/v2/tokens/
         url = f"{self.base_url}{token_address}"
         
         try:
@@ -24,7 +25,7 @@ class HyperLiquid:
             )
             if res.status_code == 200:
                 data = res.json()
-                return TokenResponse(
+                return TokenResponseAPI(
                     name=data['name'], 
                     symbol=data['symbol'],
                     address=token_address,
@@ -37,7 +38,8 @@ class HyperLiquid:
             raise
         
     
-    async def get_token_holders(self, token_address: str) -> TokenHolderResponse:
+    async def get_token_holders(self, token_address: str) -> TokenHolderResponseAPI:
+        # base_url = https://www.hyperscan.com/api/v2/tokens/
         url = f"{self.base_url}{token_address}"
         
         try:
@@ -48,28 +50,44 @@ class HyperLiquid:
             )
             if res.status_code == 200:
                 data = res.json()
-                return TokenHolderResponse(holders=data['holders'], timestamp=datetime.now())
+                return TokenHolderResponseAPI(holders=data['holders'], timestamp=datetime.now())
         except Exception as e:
             logger.error(f"error making API call to: {url}\n {str(e)}")
             raise
     
+    async def get_top_5_holders(self, token_address: str) -> list[TokenTopHoldersResponseAPI]:
+        # base_url = https://www.hyperscan.com/api/v2/tokens/
+        url = f"{self.base_url}{token_address}"
+        top_holders = []
+        try:
+            res = self.session.get(
+                url=url,
+                timeout=self.timeout,
+                headers={'accept':'application/json'}
+            )
+            if res.status_code == 200:
+                data = res.json()
+                # TODO: Maybe make into a function, as more logic should be associated
+                # I.E: Only non-protocol addresses?
+                for holder in data['items'][:5]:
+                    top_holders.append(TokenTopHoldersResponseAPI(address=holder['address']['hash'], amount=holder['address']['value']))
+            return top_holders
+        except Exception as e:
+            logger.error(f"error making API call to: {url}\n {str(e)}")
+            raise
 
-    async def get_top_5_holders(self, token_address: str):
-        
-        """
-        - this request will return top holders for a given token and shows given holder amount
-        curl -X 'GET' \
-        'https://www.hyperscan.com/api/v2/tokens/0x47bb061C0204Af921F43DC73C7D7768d2672DdEE/holders' \
-        -H 'accept: application/json'
-        """
-        pass
-
-    async def get_token_deployer_address(self, token_address: str):
-        """
-        - this request returns deployer address
-        curl -X 'GET' \
-            'https://www.hyperscan.com/api/v2/addresses/0x47bb061C0204Af921F43DC73C7D7768d2672DdEE' \
-            -H 
-        """
-        pass
-
+    async def get_token_deployer_address(self, token_address: str) -> TokenDeployerResponseAPI:
+        # base_url = https://www.hyperscan.com/api/v2/addresses/
+        url = f"{self.base_url}{token_address}"
+        try:
+            res = self.session.get(
+                url=url,
+                timeout=self.timeout,
+                headers={'accept':'application/json'}
+            )
+            if res.status_code() == 200:
+                data = res.json()
+                return TokenDeployerResponseAPI(deployer_address=data['creator_address_hash'])    
+        except Exception as e:
+            logger.error(f"error making API call to: {url}\n {str(e)}")
+            raise

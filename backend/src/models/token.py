@@ -1,3 +1,4 @@
+from calendar import c
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional
@@ -5,11 +6,18 @@ from typing import Optional
 class Tokens(BaseModel):
     pass
 
-class TokenHolderResponse(BaseModel):
+class TokenHolderResponseAPI(BaseModel):
     holders: int
     timestamp: Optional[datetime]
 
-class TokenResponse(BaseModel):
+class TokenDeployerResponseAPI(BaseModel):
+    deployer_address: str
+
+class TokenTopHoldersResponseAPI(BaseModel):
+    address: str
+    token_ammount: float
+
+class TokenResponseAPI(BaseModel):
     name: str
     symbol: str
     address: str
