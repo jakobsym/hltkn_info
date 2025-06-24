@@ -2,16 +2,17 @@ import logging
 from fastapi import APIRouter, HTTPException
 from repository.timescale import TimescaleDB
 from repository.hyperliquid import HyperLiquid
+from models.token import TokenHolderResponse, TokenHolderResponseRoute
 # from models.token import Token
 
 logger  = logging.getLogger("repository")
 router = APIRouter()
 hl_tokens = HyperLiquid("https://www.hyperscan.com/api/v2/tokens/")
-#hl_addresses = HyperLiquid("https://www.hyperscan.com/api/v2/addresses/")
+hl_addresses = HyperLiquid("https://www.hyperscan.com/api/v2/addresses/")
 
 
 @router.get("/holders/{token_address}")
-async def get_token_holders(token_address: str):
+async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
     holders = None
     
     try:
@@ -20,7 +21,9 @@ async def get_token_holders(token_address: str):
             holders = await hl_tokens.get_token_holders(token_address=token_address)
             if holders is None:
                 raise HTTPException(status_code=404, detail="token not found")
-        return holders
+        top_holders = await hl_addresses.get_top_5_holders(token_address=token_address)
+        holder_response = TokenHolderResponseRoute(data=holders, top_holders=top_holders)
+        return holder_response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
 
@@ -38,7 +41,7 @@ async def get_token_data(token_address: str):
                 raise HTTPException(status_code=404, detail="token not found.")
         return token_data
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server error")
+        raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
    
 
 @router.get("/")

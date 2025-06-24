@@ -17,6 +17,10 @@ class TokenTopHoldersResponseAPI(BaseModel):
     address: str
     token_ammount: float
 
+class TokenHolderResponseRoute(BaseModel):
+    data: TokenHolderResponse
+    top_holders: Optional[list[TokenTopHoldersResponseAPI]]
+
 class TokenResponseRoute(BaseModel):
     name: str
     symbol: str
