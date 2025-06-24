@@ -1,7 +1,7 @@
 import logging
 import requests
 from datetime import datetime
-from models.token import TokenHolderResponseAPI, TokenResponseAPI, TokenDeployerResponseAPI,TokenTopHoldersResponseAPI
+from models.token import TokenHolderResponse, TokenResponse, TokenDeployerResponseAPI,TokenTopHoldersResponseAPI
 
 logger = logging.getLogger('repository')
 
@@ -13,7 +13,7 @@ class HyperLiquid:
         self.session = requests.Session()
         self.timeout = 5    
 
-    async def get_token_info(self, token_address: str) -> TokenResponseAPI:
+    async def get_token_info(self, token_address: str) -> TokenResponse:
         # base_url = https://www.hyperscan.com/api/v2/tokens/
         url = f"{self.base_url}{token_address}"
         
@@ -38,7 +38,7 @@ class HyperLiquid:
             raise
         
     
-    async def get_token_holders(self, token_address: str) -> TokenHolderResponseAPI:
+    async def get_token_holders(self, token_address: str) -> TokenHolderResponse:
         # base_url = https://www.hyperscan.com/api/v2/tokens/
         url = f"{self.base_url}{token_address}"
         
@@ -50,7 +50,7 @@ class HyperLiquid:
             )
             if res.status_code == 200:
                 data = res.json()
-                return TokenHolderResponseAPI(holders=data['holders'], timestamp=datetime.now())
+                return TokenHolderResponse(holders=data['holders'], timestamp=datetime.now())
         except Exception as e:
             logger.error(f"error making API call to: {url}\n {str(e)}")
             raise

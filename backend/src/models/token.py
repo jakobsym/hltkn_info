@@ -6,7 +6,7 @@ from typing import Optional
 class Tokens(BaseModel):
     pass
 
-class TokenHolderResponseAPI(BaseModel):
+class TokenHolderResponse(BaseModel):
     holders: int
     timestamp: Optional[datetime]
 
@@ -17,7 +17,16 @@ class TokenTopHoldersResponseAPI(BaseModel):
     address: str
     token_ammount: float
 
-class TokenResponseAPI(BaseModel):
+class TokenResponseRoute(BaseModel):
+    name: str
+    symbol: str
+    address: str
+    holders: int
+    supply: int
+    deployer: TokenDeployerResponseAPI
+    top_holders: list[TokenTopHoldersResponseAPI]
+
+class TokenResponse(BaseModel):
     name: str
     symbol: str
     address: str
