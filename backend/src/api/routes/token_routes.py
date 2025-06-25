@@ -11,7 +11,8 @@ router = APIRouter()
 hl_tokens = HyperLiquid("https://www.hyperscan.com/api/v2/tokens/")
 hl_addresses = HyperLiquid("https://www.hyperscan.com/api/v2/addresses/")
 
-
+# TODO: Change TimescaleDB methods into Postgres methods
+# as Timescale use is deprecated
 @router.get("/holders/{token_address}")
 async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
     holders = None
