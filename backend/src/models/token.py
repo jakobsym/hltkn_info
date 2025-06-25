@@ -3,40 +3,30 @@ from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional
 
-class Tokens(BaseModel):
-    pass
-
-class TokenHolderResponse(BaseModel):
-    holders: int
-    timestamp: Optional[datetime]
 
 class TokenDeployerResponseAPI(BaseModel):
+    """
+    - Token deployer address response from API
+    """
     deployer_address: str
 
-class TokenTopHoldersResponseAPI(BaseModel):
-    address: str
-    token_ammount: float
-
-class TokenHolderResponseRoute(BaseModel):
-    data: TokenHolderResponse
-    top_holders: Optional[list[TokenTopHoldersResponseAPI]]
-
-class TokenResponseRoute(BaseModel):
-    name: str
-    symbol: str
-    address: str
+class TokenHolderResponse(BaseModel):
+    """
+    - Holder count response from (TimescaleDB or API)
+    """
     holders: int
-    supply: int
-    deployer: TokenDeployerResponseAPI
-    top_holders: list[TokenTopHoldersResponseAPI]
+    timestamp: Optional[datetime]
 
 class TokenResponse(BaseModel):
+    """
+    - Basic token info response from (TimescaleDB or API)
+    """
     name: str
     symbol: str
     address: str
     holders: int
     supply: int
-    timestamp: Optional[datetime]
+    timestamp: Optional[datetime] = None
     @field_validator('timestamp')
     @classmethod
     def parse_timestamp(cls, value):
@@ -44,7 +34,30 @@ class TokenResponse(BaseModel):
             return datetime.fromisoformat(value)
         return value
 
-# TODO: Make different responses for different timeframes?
-# response for 6hour, 12hour, etc?
-class TokenHolderTSReponse(BaseModel):
-    pass
+class TokenResponseWithDeployer(TokenResponse):
+    """
+    - TokenResponse subclass which includes a deployer field
+     """
+    deployer: str
+
+class TokenTopHoldersResponseAPI(BaseModel):
+    """
+    - Top token holders for a given token from API
+    """
+    address: str
+    token_amount: float
+
+class TokenHolderResponseRoute(BaseModel):
+    """
+    - Combined holder count + top holders response for Routes
+    """
+    items: TokenHolderResponse
+    top_holders: Optional[list[TokenTopHoldersResponseAPI]]
+   
+class TokenResponseRoute(BaseModel):
+    """
+    - Full token info with top holders and deployer response for Routes
+    """
+    items: TokenResponseWithDeployer
+    # - Not sure if top_holders should be included here
+    #top_holders: list[TokenTopHoldersResponseAPI]

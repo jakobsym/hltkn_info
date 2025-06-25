@@ -7,7 +7,7 @@ def config_logging():
     (Path(__file__).parent.parent / "logs").mkdir(exist_ok=True)
 
     # load logging.yaml
-    config_path = Path(__file__).parent.parent / "config" / "logging.yaml"
+    config_path = Path(__file__).parent.parent / "backend" /"src" / "config" / "logging.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
         logging.config.dictConfig(config)

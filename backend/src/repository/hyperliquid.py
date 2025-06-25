@@ -25,7 +25,7 @@ class HyperLiquid:
             )
             if res.status_code == 200:
                 data = res.json()
-                return TokenResponseAPI(
+                return TokenResponse(
                     name=data['name'], 
                     symbol=data['symbol'],
                     address=token_address,
@@ -57,7 +57,7 @@ class HyperLiquid:
     
     async def get_top_5_holders(self, token_address: str) -> list[TokenTopHoldersResponseAPI]:
         # base_url = https://www.hyperscan.com/api/v2/tokens/
-        url = f"{self.base_url}{token_address}"
+        url = f"{self.base_url}{token_address}/holders"
         top_holders = []
         try:
             res = self.session.get(
@@ -70,7 +70,7 @@ class HyperLiquid:
                 # TODO: Maybe make into a function, as more logic should be associated
                 # I.E: Only non-protocol addresses?
                 for holder in data['items'][:5]:
-                    top_holders.append(TokenTopHoldersResponseAPI(address=holder['address']['hash'], amount=holder['address']['value']))
+                    top_holders.append(TokenTopHoldersResponseAPI(address=holder['address']['hash'], token_amount=float(holder['value'])))
             return top_holders
         except Exception as e:
             logger.error(f"error making API call to: {url}\n {str(e)}")
@@ -85,9 +85,9 @@ class HyperLiquid:
                 timeout=self.timeout,
                 headers={'accept':'application/json'}
             )
-            if res.status_code() == 200:
+            if res.status_code == 200:
                 data = res.json()
-                return TokenDeployerResponseAPI(deployer_address=data['creator_address_hash'])    
+                return TokenDeployerResponseAPI(deployer_address=data['creator_address_hash']) 
         except Exception as e:
             logger.error(f"error making API call to: {url}\n {str(e)}")
             raise

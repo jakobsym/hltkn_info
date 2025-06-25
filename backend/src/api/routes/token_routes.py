@@ -1,8 +1,9 @@
 import logging
+import token
 from fastapi import APIRouter, HTTPException
 from repository.timescale import TimescaleDB
 from repository.hyperliquid import HyperLiquid
-from models.token import TokenHolderResponse, TokenHolderResponseRoute
+from models.token import TokenHolderResponse, TokenHolderResponseRoute, TokenResponseRoute, TokenResponseWithDeployer
 # from models.token import Token
 
 logger  = logging.getLogger("repository")
@@ -21,7 +22,7 @@ async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
             holders = await hl_tokens.get_token_holders(token_address=token_address)
             if holders is None:
                 raise HTTPException(status_code=404, detail="token not found")
-        top_holders = await hl_addresses.get_top_5_holders(token_address=token_address)
+        top_holders = await hl_tokens.get_top_5_holders(token_address=token_address)
         holder_response = TokenHolderResponseRoute(data=holders, top_holders=top_holders)
         return holder_response
     except Exception as e:
@@ -30,16 +31,22 @@ async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
 
 @router.get("/{token_address}")
 async def get_token_data(token_address: str):
-    # TODO: Build a token response which includes top 5 holders, as well as deployer address?
-    # TODO: Or should top5 holders + deployer be a seperate route?
     token_data = None
+
     try:
         token_data = await TimescaleDB.get_token_data(token_address=token_address)
         if token_data is None:
             token_data = await hl_tokens.get_token_info(token_address=token_address)
             if token_data is None:
                 raise HTTPException(status_code=404, detail="token not found.")
-        return token_data
+        data = await hl_addresses.get_token_deployer_address(token_address=token_address)
+        deployer_address = data.deployer_address if data else None # extract deployer_address
+
+        token_data_dict = dict(token_data)
+        token_data_dict['deployer'] = deployer_address
+
+        token_response = TokenResponseRoute(items=TokenResponseWithDeployer(**token_data_dict))
+        return token_response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
    
@@ -53,9 +60,6 @@ async def get_tokens():
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"server error: {str(e)}")
-
-
-
 
 """
 @router.get("/holders/ts/{token_address}")

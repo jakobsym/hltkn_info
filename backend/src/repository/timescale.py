@@ -87,11 +87,11 @@ class TimescaleDB:
         try:
             async with cls.get_connection() as conn:
                 res = await conn.fetchrow('''
-                    SELECT t.token_symbol, t.token_name, t.token_address, tm.holders, t.supply
+                    SELECT t.token_symbol as symbol, t.token_name as name, t.token_address as address, tm.holders, t.supply
                     FROM tokens t 
                     JOIN token_metrics tm ON t.id = tm.token_id 
                     WHERE t.token_address = $1
-                    ORDER BY tm.holders DESC LIMIT 1;
+                    ORDER BY tm.recorded_at DESC LIMIT 1;
                     ''', token_address)
 
                 if res is None:
