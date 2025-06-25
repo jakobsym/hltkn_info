@@ -30,7 +30,7 @@ async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
 
 
 @router.get("/{token_address}")
-async def get_token_data(token_address: str):
+async def get_token_data(token_address: str) -> TokenResponseRoute:
     token_data = None
 
     try:
