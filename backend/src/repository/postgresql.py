@@ -7,22 +7,22 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from models.token import TokenHolderResponse, TokenResponse
 
+
 load_dotenv()
 logger = logging.getLogger('repository')
 
-# designed in a way that only a single connection_pool, or instance of class ever exists
-# through the use of cls-'class' variables and __new__
-# denoting methods with @classmethod allow for class level changes to be made to cls variables
-class TimescaleDB:
+# TODO: Since timescale, and postgres connect the sameway, create a general connection that can be used by both
+# instead of repeating code like current situation
+
+class PostgresDB:
     _instance = None
     _connection_pool = None
 
-    # ensure only 1 connection pool is ever established
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(TimescaleDB, cls).__new__(cls)
+            cls._instance = super(PostgresDB, cls).__new__(cls)
         return cls._instance
-    
+
     @classmethod
     async def init_pool(cls, max_retry: int = 3, retry_delay: float = 5.0, min_size:int = 1, max_size:int  = 10):
         """ check if connection active before establishing connection pool """
@@ -31,7 +31,7 @@ class TimescaleDB:
         if cls._connection_pool is not None:
             return
 
-        connection_str = os.getenv("TIMESCALE_CONNECTION_STRING")
+        connection_str = os.getenv("POSTGRES_CONNECTION_STRING")
       
         if connection_str == None:
             logger.error("connection string incorrectly configured")
@@ -74,8 +74,7 @@ class TimescaleDB:
         if cls._connection_pool is not None:
             await cls._connection_pool.close()
             cls._connection_pool = None
-
-
+    
 
     """ Token related methods """
     @classmethod
@@ -154,27 +153,3 @@ class TimescaleDB:
         except Exception as e:
             logger.error(f"error retrieving tokens from db: {str(e)}")
             raise
-
-
-    """ Protocol related methods """
-    @classmethod
-    async def get_protocols(cls):
-        pass
-
-    @classmethod    
-    async def get_protocol_tvl(cls, protocol_name: str):
-        pass
-
-    @classmethod
-    async def get_protocol_liq(cls, protocol_name: str):
-        pass 
-
-"""
-- returns ATH holder count for a given token
-
-SELECT tm.holders FROM token_metrics tm 
-                    JOIN tokens t ON tm.token_id = t.id 
-                    WHERE t.token_address = $1 
-                    ORDER BY tm.holders DESC LIMIT 1;
-
-"""

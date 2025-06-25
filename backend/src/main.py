@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from api.routes.protocol_routes import router as protocols_router
 from api.routes.token_routes import router as tokens_router
 from repository.timescale import TimescaleDB
+from repository.postgresql import PostgresDB
 
 # init logging
 config_logging()
@@ -16,14 +17,23 @@ async def lifespan(app: FastAPI):
         logger.info("DB connection pool established")
         
         if TimescaleDB._connection_pool is None:
-            raise RuntimeError("failed to establish db connection pool")
+            await PostgresDB.init_pool()
+            if PostgresDB._connection_pool is None:
+                raise RuntimeError("failed to establish db connection pool")
+            logger.info("postgres connection pool established")
+            yield
         yield
     except Exception as e:
         logger.error(f"error init connection pool: {str(e)}")
         raise
     finally:
-        await TimescaleDB.close_connection()
-        logger.info("DB connection pool is closed")
+        if TimescaleDB._connection_pool is not None:
+            await TimescaleDB.close_connection()
+            logger.info("DB connection pool is closed")
+        if PostgresDB._connection_pool is not None:
+            await PostgresDB.close_connection()
+            logger.info("DB connection pool is closed")
+        
         
 app = FastAPI(title="hltkn_api", description="API interfacing timescaleDB data", version="0.0.1", lifespan=lifespan)
 app.include_router(protocols_router, prefix="/v0/protocol", tags=["protocols"])
