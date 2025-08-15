@@ -1,7 +1,7 @@
 import logging
 import token
 from fastapi import APIRouter, HTTPException
-from repository.timescale import TimescaleDB
+from backend.src.repository.postgresql import PostgresDB
 from repository.hyperliquid import HyperLiquid
 from models.token import TokenHolderResponse, TokenHolderResponseRoute, TokenResponseRoute, TokenResponseWithDeployer
 # from models.token import Token
@@ -11,14 +11,12 @@ router = APIRouter()
 hl_tokens = HyperLiquid("https://www.hyperscan.com/api/v2/tokens/")
 hl_addresses = HyperLiquid("https://www.hyperscan.com/api/v2/addresses/")
 
-# TODO: Change TimescaleDB methods into Postgres methods
-# as Timescale use is deprecated
 @router.get("/holders/{token_address}")
 async def get_token_holders(token_address: str) -> TokenHolderResponseRoute:
     holders = None
     
     try:
-        holders = await TimescaleDB.get_token_holders(token_address=token_address)
+        holders = await PostgresDB.get_token_holders(token_address=token_address)
         if holders is None:
             holders = await hl_tokens.get_token_holders(token_address=token_address)
             if holders is None:
@@ -35,7 +33,7 @@ async def get_token_data(token_address: str) -> TokenResponseRoute:
     token_data = None
 
     try:
-        token_data = await TimescaleDB.get_token_data(token_address=token_address)
+        token_data = await PostgresDB.get_token_data(token_address=token_address)
         if token_data is None:
             token_data = await hl_tokens.get_token_info(token_address=token_address)
             if token_data is None:
@@ -55,7 +53,7 @@ async def get_token_data(token_address: str) -> TokenResponseRoute:
 @router.get("/")
 async def get_tokens():
     try:
-        data = await TimescaleDB.get_tokens()
+        data = await PostgresDB.get_tokens()
         if data is None:
             raise HTTPException(status_code=500, detail="unable to get tokens from db")
         return data

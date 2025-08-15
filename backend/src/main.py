@@ -4,7 +4,7 @@ from config.logging_config import config_logging
 from fastapi import FastAPI
 from api.routes.protocol_routes import router as protocols_router
 from api.routes.token_routes import router as tokens_router
-from repository.timescale import TimescaleDB
+from backend.src.repository.timescaleDeprecated import TimescaleDB
 from repository.postgresql import PostgresDB
 
 # init logging
@@ -13,23 +13,15 @@ logger = logging.getLogger('api')
 
 async def lifespan(app: FastAPI):
     try:
-        await TimescaleDB.init_pool()
+        await PostgresDB.init_pool()
+        if PostgresDB._connection_pool is None:
+            raise RuntimeError("failed to establish db connection pool")
         logger.info("DB connection pool established")
-        
-        if TimescaleDB._connection_pool is None:
-            await PostgresDB.init_pool()
-            if PostgresDB._connection_pool is None:
-                raise RuntimeError("failed to establish db connection pool")
-            logger.info("postgres connection pool established")
-            yield
         yield
     except Exception as e:
-        logger.error(f"error init connection pool: {str(e)}")
+        logger.error(f"error init db connection pool: {str(e)}")
         raise
     finally:
-        if TimescaleDB._connection_pool is not None:
-            await TimescaleDB.close_connection()
-            logger.info("DB connection pool is closed")
         if PostgresDB._connection_pool is not None:
             await PostgresDB.close_connection()
             logger.info("DB connection pool is closed")
